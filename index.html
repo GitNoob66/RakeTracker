@@ -49,7 +49,7 @@
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.2s ease, border-color 0.2s ease; }
-  body { background: var(--bg); color: var(--text); font-size: 14px; overflow: hidden; height: 100vh; }
+  body { background: var(--bg); color: var(--text); font-size: 14px; overflow: hidden; height: 100vh; width: 100%; }
   button, input { font: inherit; color: inherit; border: none; background: none; outline: none; }
   button { cursor: pointer; }
 
@@ -58,7 +58,7 @@
     display: grid;
     grid-template-columns: 280px 1fr 360px;
     height: 100vh;
-    width: 100vw;
+    width: 100%;
   }
 
   /* Structural Sidebar Column Layout Components */
@@ -99,17 +99,19 @@
 
   /* Global Top Bar Console Strip Navbar Component */
   .top-navbar {
-    height: 70px;
+    min-height: 70px;
+    height: auto;
     background: var(--surface);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
+    padding: 12px 24px;
     gap: 20px;
     flex-shrink: 0;
+    position: relative;
   }
-  .search-wrapper { display: flex; align-items: center; gap: 12px; background: var(--panel-inner); border: 1px solid var(--border); padding: 0 16px; height: 44px; border-radius: 999px; width: 400px; }
+  .search-wrapper { display: flex; align-items: center; gap: 12px; background: var(--panel-inner); border: 1px solid var(--border); padding: 0 16px; height: 44px; border-radius: 999px; width: 100%; max-width: 400px; }
   .search-wrapper input { width: 100%; font-size: 13px; }
   .action-row { display: flex; align-items: center; gap: 10px; }
   .btn-base { padding: 10px 18px; border-radius: 999px; font-weight: 600; font-size: 13px; border: 1px solid var(--border); background: var(--surface); }
@@ -157,7 +159,7 @@
   .metric-title { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; color: var(--muted); }
   .metric-value { font-size: 26px; font-weight: 700; margin-top: 8px; letter-spacing: -0.03em; }
 
-  /* FIX: Iron-clad Map Box Layout Rules */
+  /* Iron-clad Map Box Layout Rules */
   .map-panel-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -256,7 +258,7 @@
 
   /* Modal Windows Styles Setup Configuration Components Box System Frame Block */
   .modal { display: none; position: fixed; inset: 0; background: rgba(5, 7, 11, 0.7); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 20px; }
-  .modal-card { width: min(500px, 100%); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; gap: 16px; }
+  .modal-card { width: 100%; max-width: 500px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow-md); display: flex; flex-direction: column; gap: 16px; }
 
   /* High contrast label wrapper reset */
   .rake-label {
@@ -267,13 +269,39 @@
     transform: translate(-50%, -50%); 
   }
 
+  /* * MOBILE & RESPONSIVE BREAKPOINTS 
+   */
   @media (max-width: 1200px) {
-    .app-layout { grid-template-columns: 1fr; height: auto; overflow: auto; }
-    .control-sidebar, .inspection-sidebar { display: none; }
-    body { overflow: auto; height: auto; }
-    .central-workspace { height: auto; }
+    .app-layout { display: flex; flex-direction: column; height: auto; min-height: 100vh; }
+    body { overflow-y: auto; overflow-x: hidden; height: auto; }
+    .control-sidebar { border-right: none; border-bottom: 1px solid var(--border); padding: 20px; display: flex; width: 100%; }
+    .inspection-sidebar { border-left: none; border-top: 1px solid var(--border); padding: 20px; display: flex; width: 100%; overflow-y: visible; }
+    .central-workspace { height: auto; overflow: visible; flex: 1; }
+    .workspace-content { overflow: visible; height: auto; padding: 16px; }
+    .kpi-dashboard-grid { grid-template-columns: repeat(3, 1fr); }
+    .map-panel-card { height: 60vh !important; min-height: 400px; }
+  }
+
+  @media (max-width: 992px) {
     .kpi-dashboard-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 768px) {
+    .top-navbar { flex-direction: column; align-items: stretch; padding: 16px; gap: 16px; }
+    .search-wrapper { max-width: 100%; }
+    .action-row { justify-content: flex-start; flex-wrap: wrap; gap: 10px; }
+    .map-header-bar { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .filter-inline-strip { width: 100%; flex-wrap: wrap; }
+    .filter-tab { flex: 1; text-align: center; white-space: nowrap; }
     .map-panel-card { height: 50vh !important; }
+    .panel-header-line { flex-direction: column; align-items: flex-start; gap: 10px; }
+  }
+
+  @media (max-width: 480px) {
+    .kpi-dashboard-grid { grid-template-columns: 1fr; }
+    .action-row { flex-direction: column; align-items: stretch; width: 100%; }
+    .btn-base { width: 100%; text-align: center; }
+    .theme-toggle { align-self: flex-start; }
   }
  </style>
 </head>
@@ -303,15 +331,15 @@
    </div>
 
    <div class="config-card">
-    <h4 class="section-label" style="margin-bottom: 2px;">Cloud Stream Config</h4>
-    <p class="muted" style="font-size: 11px; margin-bottom: 4px;">Paste dynamic data public CSV feed URLs below:</p>
-    <div class="config-field">
-     <label>Rake Sheet CSV Target Link</label>
-     <input type="text" id="rakeSheetUrl" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vQdoHlZ2MiJkX0FkY5uWFTh1xEtwSqhVGNhtkvX9Thri0_4_Bb2ubkOF1ciDA6ERyouSjx7YRuzR-29/pub?gid=1875791734&single=true&output=csv" placeholder="No endpoint loaded">
-    </div>
-    <div class="config-field">
-     <label>Station Reference Master</label>
-     <input type="text" id="stationSheetUrl" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vQmec6U-M_sga_T4qHFukzVGEr_CJkY6ybQjvkG0QTrMFM3nAoeYW3Iy2wsythPzLVQhG_FvM6S8hG6/pub?gid=1855190932&single=true&output=csv" placeholder="No endpoint loaded">
+    <h4 class="section-label" style="margin-bottom: 2px;">FOIS Portals</h4>
+    <p class="muted" style="font-size: 11px; margin-bottom: 8px;">External reference links:</p>
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+     <a href="https://www.fois.indianrail.gov.in/FOISWebPortal/pages/FWP_FNREnq.jsp" target="_blank" style="color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;">
+      FOIS FNR Enquiry <span>↗</span>
+     </a>
+     <a href="https://www.fois.indianrail.gov.in/FOISWebPortal/pages/FWP_FrgtCalcNew.jsp" target="_blank" style="color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px;">
+      FOIS Freight Calc <span>↗</span>
+     </a>
     </div>
    </div>
   </aside>
@@ -756,7 +784,7 @@ let currentTarget='rake';
 function openModal(type){
   currentTarget=type; 
   modalTitle.textContent=type==='rake'?'Configure Rake Dataset Source Link Address':'Configure Station Coordinate Master Feed'; 
-  modalInput.value=type==='rake'?document.getElementById('rakeSheetUrl').value:document.getElementById('stationSheetUrl').value; 
+  modalInput.value = ''; 
   modal.style.display='flex'; 
   modalInput.focus();
 }
@@ -767,8 +795,6 @@ document.getElementById('stationTemplateTab').onclick=()=>openModal('station');
 document.getElementById('closeModal').onclick=closeModal; 
 document.getElementById('cancelModal').onclick=closeModal; 
 document.getElementById('saveModal').onclick=()=>{
-  if(currentTarget==='rake') document.getElementById('rakeSheetUrl').value=modalInput.value.trim(); 
-  else document.getElementById('stationSheetUrl').value=modalInput.value.trim(); 
   closeModal(); 
   refresh();
 }; 
