@@ -787,13 +787,20 @@ function loadDemo(){
 function parseCsv(url){
   return new Promise((resolve,reject)=>Papa.parse(url,{download:true,header:true,skipEmptyLines:true,complete:r=>resolve(r.data),error:reject}))}
 
+
+// --- MODIFIED REFRESH FUNCTION POINTING TO CLOUDFLARE PROXY ---
 async function refresh(){
-  const u1='https://docs.google.com/spreadsheets/d/e/2PACX-1vQdoHlZ2MiJkX0FkY5uWFTh1xEtwSqhVGNhtkvX9Thri0_4_Bb2ubkOF1ciDA6ERyouSjx7YRuzR-29/pub?gid=1875791734&single=true&output=csv'; 
-  const u2='https://docs.google.com/spreadsheets/d/e/2PACX-1vQmec6U-M_sga_T4qHFukzVGEr_CJkY6ybQjvkG0QTrMFM3nAoeYW3Iy2wsythPzLVQhG_FvM6S8hG6/pub?gid=1855190932&single=true&output=csv'; 
+  // NOTE: Replace "YOUR-SUBDOMAIN" with the actual Cloudflare Workers subdomain they assign to you.
+  const proxyRakeEndpoint = 'https://cwc-proxy.munindherdhayaljj.workers.dev/api/rakes';
+  const proxyStationEndpoint = 'https://cwc-proxy.munindherdhayaljj.workers.dev/api/stations';
   
   document.getElementById('syncStatus').textContent='Synchronizing network links data nodes streams...'; 
   try{
-    const [rakes,stationsCsv]=await Promise.all([parseCsv(u1),parseCsv(u2)]); 
+    const [rakes,stationsCsv]=await Promise.all([
+      parseCsv(proxyRakeEndpoint),
+      parseCsv(proxyStationEndpoint)
+    ]); 
+    
     stationMaster=stationsCsv.map(r=>({
       station: (pick(r, ['station', 'name', 'station name']) || '').trim(),
       lat: parseFloat(pick(r, ['latitude', 'lat'])),
@@ -803,10 +810,12 @@ async function refresh(){
     loadRecords(rakes); 
     document.getElementById('syncStatus').textContent='Cloud tracking telemetry synchronization completed successfully.';
   }catch(e){
-    document.getElementById('syncStatus').textContent='Target connection timed out. Verify address public formatting rules.';
+    document.getElementById('syncStatus').textContent='Target connection timed out. Verify proxy routing settings.';
     console.error(e);
   }
 }
+// ---------------------------------------------------------------
+
 
 const modal=document.getElementById('linkModal'), modalTitle=document.getElementById('modalTitle'), modalInput=document.getElementById('modalInput'); 
 let currentTarget='rake'; 
