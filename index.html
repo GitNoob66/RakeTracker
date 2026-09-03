@@ -191,8 +191,7 @@
   #map { 
     flex-grow: 1; 
     width: 100%; 
-    height: 100% !important; 
-    min-height: 0;
+    height: 100%; 
     background: var(--panel-inner);
     z-index: 1;
   }
@@ -295,11 +294,11 @@
     border: none !important;
   }
   .rake-label div { 
-    transform: translate(-50%, -50%); 
+    transform: translate3d(-50%, -50%, 0);
+    backface-visibility: hidden;
   }
 
-  /* * MOBILE & RESPONSIVE BREAKPOINTS 
-   */
+  /* MOBILE & RESPONSIVE BREAKPOINTS */
   @media (max-width: 1200px) {
     .app-layout { display: flex; flex-direction: column; height: auto; min-height: 100vh; }
     body { overflow-y: auto; overflow-x: hidden; height: auto; }
@@ -353,8 +352,8 @@
      <button class="menu-btn active" id="rakeTemplateTab">
       <span style="font-size: 16px;">📋</span> Rake Workspace Sheet
      </button>
-     <button class="menu-btn" id="stationTemplateTab">
-      <span style="font-size: 16px;">🗺️</span> Station Coordinate Master
+     <button class="menu-btn" id="haulageCalcTab">
+      <span style="font-size: 16px;">🧮</span> Rake Haulage Calculator
      </button>
     </nav>
    </div>
@@ -522,7 +521,110 @@
   </div>
  </div>
 
+ <!-- RAKE HAULAGE CALCULATOR MODAL -->
+ <div class="modal" id="haulageModal">
+  <div class="modal-card" style="max-width: 650px; max-height: 90vh; overflow-y: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px;">
+      <strong style="font-size: 16px; display: flex; align-items: center; gap: 8px;">
+        <span>🧮</span> Rake Haulage Calculator
+      </strong>
+      <button id="closeHaulageModal" style="padding: 4px 8px; font-weight: 700; cursor: pointer; background: transparent; border: none; font-size: 18px; color: var(--text);" title="Close">✕</button>
+    </div>
+    
+    <p class="muted" style="font-size: 12px;">Rates based on Railway Board Rates Circular No. 20 of 2018 (w.e.f. 15.11.2018).</p>
+
+    <!-- Form Inputs -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <div class="config-field" style="grid-column: span 2;">
+        <label>Distance (in Kms):</label>
+        <input type="number" id="calcDistance" placeholder="e.g. 850" min="1" step="1">
+      </div>
+
+      <!-- 20ft TEUs -->
+      <div class="config-field">
+        <label>Loaded 20ft TEUs (≤ 10T):</label>
+        <input type="number" id="teu10" placeholder="0" min="0">
+      </div>
+      <div class="config-field">
+        <label>Loaded 20ft TEUs (10T - 20T):</label>
+        <input type="number" id="teu20" placeholder="0" min="0">
+      </div>
+      <div class="config-field">
+        <label>Loaded 20ft TEUs (20T - 26T):</label>
+        <input type="number" id="teu26" placeholder="0" min="0">
+      </div>
+      <div class="config-field">
+        <label>Loaded 20ft TEUs (26T - 31T):</label>
+        <input type="number" id="teu31" placeholder="0" min="0">
+      </div>
+      <div class="config-field" style="grid-column: span 2;">
+        <label>Loaded 20ft TEUs (> 31T):</label>
+        <input type="number" id="teu31plus" placeholder="0" min="0">
+      </div>
+
+      <!-- 40ft FEUs (Restricted to 2 categories) -->
+      <div class="config-field">
+        <label>Loaded 40ft FEUs (&lt; 20 MT Gross):</label>
+        <input type="number" id="feu20" placeholder="0" min="0">
+      </div>
+      <div class="config-field">
+        <label>Loaded 40ft FEUs (20 MT to 40 MT Gross):</label>
+        <input type="number" id="feu40" placeholder="0" min="0">
+      </div>
+
+      <!-- Empties -->
+      <div class="config-field">
+        <label>Empty 20ft TEUs:</label>
+        <input type="number" id="emptyTeu" placeholder="0" min="0">
+      </div>
+      <div class="config-field">
+        <label>Empty 40ft FEUs:</label>
+        <input type="number" id="emptyFeu" placeholder="0" min="0">
+      </div>
+      <div class="config-field" style="grid-column: span 2;">
+        <label>Empty Flat Wagons:</label>
+        <input type="number" id="emptyFlats" placeholder="0" min="0">
+      </div>
+
+      <!-- Double Stack Settings (40ft FEUs Only) -->
+      <div class="config-field" style="grid-column: span 2;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; font-size: 13px;">
+          <input type="checkbox" id="isDoubleStack" style="width: auto;"> Is Double Stack Movement? (Upper deck allows 40ft FEUs only @ 50% rate)
+        </label>
+      </div>
+      
+      <div id="upperStackWrapper" style="display: none; grid-column: span 2; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="config-field">
+          <label>Upper Deck 40ft FEUs (&lt; 20 MT):</label>
+          <input type="number" id="upperFeu20" placeholder="0" min="0">
+        </div>
+        <div class="config-field">
+          <label>Upper Deck 40ft FEUs (20 MT to 40 MT):</label>
+          <input type="number" id="upperFeu40" placeholder="0" min="0">
+        </div>
+      </div>
+    </div>
+
+    <!-- Calculation Summary Output -->
+    <div id="calcResults" style="background: var(--panel-inner); border: 1px solid var(--border); border-radius: 8px; padding: 14px; display: none; margin-top: 12px;">
+      <div style="font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase;">Estimated Total Haulage Charge</div>
+      <div style="font-size: 28px; font-weight: 800; color: var(--primary); margin: 4px 0;" id="totalHaulageValue">₹ 0</div>
+      <div id="calcBreakdown" style="font-size: 12px; display: flex; flex-direction: column; gap: 8px; margin-top: 8px; border-top: 1px solid var(--border); padding-top: 8px;"></div>
+    </div>
+
+    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px;">
+      <button id="resetHaulageModal" class="btn-base" style="padding: 8px 16px;">🔄 Refresh / Reset</button>
+      <button id="cancelHaulageModal" class="btn-base" style="padding: 8px 16px;">Close</button>
+      <button id="submitHaulageCalc" class="btn-base primary" style="padding: 8px 18px; border-radius: 999px;">Calculate Charge</button>
+    </div>
+  </div>
+ </div>
+
 <script>
+// EXTRACTED PROXY ENDPOINTS TO GLOBAL SCOPE
+let activeRakeEndpoint = 'https://cwc-proxy.munindherdhayaljj.workers.dev/api/rakes';
+let activeStationEndpoint = 'https://cwc-proxy.munindherdhayaljj.workers.dev/api/stations';
+
 const demoStations=[{station:'Ahmedabad',lat:23.0225,lng:72.5714},{station:'Palanpur',lat:24.1725,lng:72.4339},{station:'Tughlakabad',lat:28.5143,lng:77.2750},{station:'Vadodara',lat:22.3072,lng:73.1812},{station:'Mundra',lat:22.8390,lng:69.7210},{station:'ICD Khodiyar',lat:23.17,lng:72.58},{station:'Dadri',lat:28.5462,lng:77.5536},{station:'Sanand',lat:22.9923,lng:72.3817},{station:'JNPT',lat:18.9498,lng:72.9495},{station:'Pipavav',lat:20.9081,lng:71.5002}];
 
 const demoRakes=[
@@ -675,6 +777,7 @@ function render(){
         finalLng += radius * Math.cos(angle);
       }
 
+      // FIXED LEAFLET ICON SIZE NULL ANCHOR WARNING
       const textIcon = L.divIcon({
         html: `<div style="
                 color: #ffffff;
@@ -692,12 +795,12 @@ function render(){
                 display: inline-block;
               ">${r.rakeNo}</div>`,
         className: 'rake-label',
-        iconSize: [0, 0], 
+        iconSize: null, 
         iconAnchor: [0, 0] 
       });
 
       L.marker([finalLat, finalLng], { icon: textIcon }).addTo(layer)
-       .bindPopup(`<b>Rake Name: ${r.rakeNo}</b><br>Station/Siding: ${r.station}<br>Current Status: ${r.status}`)
+       .bindPopup(`<b>Rake Name: ${r.rakeNo}</b><br>Station/Siding: ${r.station}<br>Current Status: ${r.status}`, { autoPan: false })
        .on('click',()=>selectRecord(r.id));
     } 
 
@@ -774,7 +877,8 @@ function selectRecord(id){
   document.getElementById('selectedMeta').textContent=r.remarks; 
   
   if(st) {
-    map.flyTo([st.lat,st.lng],6,{duration:.6});
+    const targetZoom = Math.max(map.getZoom(), 6);
+    map.flyTo([st.lat, st.lng], targetZoom, { duration: .6 });
   }
 }
 
@@ -787,18 +891,12 @@ function loadDemo(){
 function parseCsv(url){
   return new Promise((resolve,reject)=>Papa.parse(url,{download:true,header:true,skipEmptyLines:true,complete:r=>resolve(r.data),error:reject}))}
 
-
-// --- MODIFIED REFRESH FUNCTION POINTING TO CLOUDFLARE PROXY ---
 async function refresh(){
-  // NOTE: Replace "YOUR-SUBDOMAIN" with the actual Cloudflare Workers subdomain they assign to you.
-  const proxyRakeEndpoint = 'https://cwc-proxy.munindherdhayaljj.workers.dev/api/rakes';
-  const proxyStationEndpoint = 'https://cwc-proxy.munindherdhayaljj.workers.dev/api/stations';
-  
   document.getElementById('syncStatus').textContent='Synchronizing network links data nodes streams...'; 
   try{
     const [rakes,stationsCsv]=await Promise.all([
-      parseCsv(proxyRakeEndpoint),
-      parseCsv(proxyStationEndpoint)
+      parseCsv(activeRakeEndpoint),
+      parseCsv(activeStationEndpoint)
     ]); 
     
     stationMaster=stationsCsv.map(r=>({
@@ -814,28 +912,36 @@ async function refresh(){
     console.error(e);
   }
 }
-// ---------------------------------------------------------------
-
 
 const modal=document.getElementById('linkModal'), modalTitle=document.getElementById('modalTitle'), modalInput=document.getElementById('modalInput'); 
 let currentTarget='rake'; 
+
 function openModal(type){
   currentTarget=type; 
   modalTitle.textContent=type==='rake'?'Configure Rake Dataset Source Link Address':'Configure Station Coordinate Master Feed'; 
-  modalInput.value = ''; 
+  modalInput.value = type === 'rake' ? activeRakeEndpoint : activeStationEndpoint; 
   modal.style.display='flex'; 
   modalInput.focus();
 }
+
 function closeModal(){modal.style.display='none'}
 
 document.getElementById('rakeTemplateTab').onclick=()=>openModal('rake'); 
-document.getElementById('stationTemplateTab').onclick=()=>openModal('station'); 
+
 document.getElementById('closeModal').onclick=closeModal; 
 document.getElementById('cancelModal').onclick=closeModal; 
+
+// FIXED MODAL SAVE LOGIC TO OVERWRITE GLOBAL ENDPOINTS
 document.getElementById('saveModal').onclick=()=>{
+  const val = modalInput.value.trim();
+  if (val) {
+    if (currentTarget === 'rake') activeRakeEndpoint = val;
+    else activeStationEndpoint = val;
+  }
   closeModal(); 
   refresh();
 }; 
+
 modal.addEventListener('click',e=>{if(e.target===modal) closeModal()});
 
 document.getElementById('loadDemoBtn').onclick=loadDemo; 
@@ -862,6 +968,261 @@ document.getElementById('kpiCardMotion').onclick=()=>setFilter('btnMotion', 'In 
 document.getElementById('kpiCardTerminal').onclick=()=>setFilter('btnTerminal', 'At Terminal');
 document.getElementById('kpiCardStabled').onclick=()=>setFilter('btnStabled', 'Stabled');
 document.getElementById('kpiCardBpc').onclick=()=>setFilter('btnBpc', 'On BPC');
+
+// --- RAILWAY HAULAGE CIRCULAR NO. 20 OF 2018 CALCULATOR LOGIC ---
+const haulageRateTable = [
+  { distance: 50, u10: 1338, u20: 2112, u26: 2263, u31: 2340, a31: 2493, emptyCont: 1307, emptyFlat: 1207 },
+  { distance: 100, u10: 1991, u20: 2517, u26: 2882, u31: 3038, a31: 3241, emptyCont: 1559, emptyFlat: 1439 },
+  { distance: 150, u10: 2645, u20: 3197, u26: 3753, u31: 4128, a31: 4520, emptyCont: 1984, emptyFlat: 1852 },
+  { distance: 200, u10: 3298, u20: 4035, u26: 4775, u31: 5276, a31: 5798, emptyCont: 2474, emptyFlat: 2309 },
+  { distance: 250, u10: 3952, u20: 4873, u26: 5799, u31: 6424, a31: 7077, emptyCont: 2964, emptyFlat: 2767 },
+  { distance: 300, u10: 4606, u20: 5711, u26: 6822, u31: 7572, a31: 8356, emptyCont: 3455, emptyFlat: 3225 },
+  { distance: 350, u10: 5259, u20: 6548, u26: 7845, u31: 8720, a31: 9635, emptyCont: 3945, emptyFlat: 3682 },
+  { distance: 400, u10: 5914, u20: 7386, u26: 8868, u31: 9868, a31: 10914, emptyCont: 4436, emptyFlat: 4140 },
+  { distance: 450, u10: 6567, u20: 8224, u26: 9891, u31: 11017, a31: 12193, emptyCont: 4926, emptyFlat: 4597 },
+  { distance: 500, u10: 7221, u20: 9062, u26: 10914, u31: 12164, a31: 13472, emptyCont: 5416, emptyFlat: 5055 },
+  { distance: 550, u10: 7875, u20: 9899, u26: 11937, u31: 13312, a31: 14750, emptyCont: 5907, emptyFlat: 5513 },
+  { distance: 600, u10: 8528, u20: 10737, u26: 12960, u31: 14461, a31: 16028, emptyCont: 6396, emptyFlat: 5970 },
+  { distance: 650, u10: 9182, u20: 11575, u26: 13983, u31: 15608, a31: 17307, emptyCont: 6887, emptyFlat: 6428 },
+  { distance: 700, u10: 9835, u20: 12413, u26: 15007, u31: 16757, a31: 18586, emptyCont: 7377, emptyFlat: 6885 },
+  { distance: 750, u10: 10490, u20: 13251, u26: 16029, u31: 17905, a31: 19865, emptyCont: 7868, emptyFlat: 7343 },
+  { distance: 800, u10: 11144, u20: 14089, u26: 17053, u31: 19052, a31: 21144, emptyCont: 8358, emptyFlat: 7801 },
+  { distance: 850, u10: 11797, u20: 14927, u26: 18076, u31: 20201, a31: 22423, emptyCont: 8848, emptyFlat: 8258 },
+  { distance: 900, u10: 12451, u20: 15765, u26: 19098, u31: 21349, a31: 23702, emptyCont: 9339, emptyFlat: 8716 },
+  { distance: 950, u10: 13104, u20: 16603, u26: 20122, u31: 22497, a31: 24980, emptyCont: 9828, emptyFlat: 9173 },
+  { distance: 1000, u10: 13758, u20: 17441, u26: 21145, u31: 23645, a31: 26258, emptyCont: 10319, emptyFlat: 9631 },
+  { distance: 1000, u10: 13758, u20: 17441, u26: 21145, u31: 23645, a31: 26258, emptyCont: 10319, emptyFlat: 9631 },
+  { distance: 1050, u10: 14412, u20: 18278, u26: 22168, u31: 24793, a31: 27537, emptyCont: 10809, emptyFlat: 10089 },
+  { distance: 1100, u10: 15065, u20: 19115, u26: 23191, u31: 25941, a31: 28816, emptyCont: 11299, emptyFlat: 10546 },
+  { distance: 1150, u10: 15720, u20: 19953, u26: 24214, u31: 27089, a31: 30095, emptyCont: 11790, emptyFlat: 11004 },
+  { distance: 1200, u10: 16373, u20: 20791, u26: 25237, u31: 28238, a31: 31374, emptyCont: 12280, emptyFlat: 11462 },
+  { distance: 1250, u10: 17027, u20: 21629, u26: 26261, u31: 29385, a31: 32653, emptyCont: 12771, emptyFlat: 11919 },
+  { distance: 1300, u10: 17681, u20: 22467, u26: 27283, u31: 30533, a31: 33932, emptyCont: 13261, emptyFlat: 12377 },
+  { distance: 1350, u10: 18334, u20: 23305, u26: 28306, u31: 31682, a31: 35210, emptyCont: 13751, emptyFlat: 12834 },
+  { distance: 1400, u10: 18988, u20: 24143, u26: 29330, u31: 32829, a31: 36489, emptyCont: 14241, emptyFlat: 13292 },
+  { distance: 1450, u10: 19641, u20: 24981, u26: 30352, u31: 33978, a31: 37767, emptyCont: 14731, emptyFlat: 13749 },
+  { distance: 1500, u10: 20295, u20: 25818, u26: 31375, u31: 35126, a31: 39046, emptyCont: 15222, emptyFlat: 14207 },
+  { distance: 1500, u10: 20295, u20: 25818, u26: 31375, u31: 35126, a31: 39046, emptyCont: 15222, emptyFlat: 14207 },
+  { distance: 2000, u10: 26833, u20: 34196, u26: 41606, u31: 46606, a31: 51834, emptyCont: 20125, emptyFlat: 18784 },
+  { distance: 2500, u10: 33370, u20: 42575, u26: 51836, u31: 58087, a31: 64621, emptyCont: 25028, emptyFlat: 23359 },
+  { distance: 3000, u10: 39907, u20: 50953, u26: 62068, u31: 69568, a31: 77409, emptyCont: 29931, emptyFlat: 27935 },
+  { distance: 3450, u10: 45791, u20: 58493, u26: 71275, u31: 79901, a31: 88918, emptyCont: 34344, emptyFlat: 32054 },
+  { distance: 3500, u10: 46445, u20: 59331, u26: 72298, u31: 81048, a31: 90197, emptyCont: 34834, emptyFlat: 32512 }
+];
+
+function getRateForDistance(km) {
+  if (km <= 0) return null;
+
+  if (km <= 3500) {
+    const slabKm = Math.ceil(km / 50) * 50;
+    let found = haulageRateTable.find(r => r.distance === slabKm);
+    
+    // Linear interpolation handler for large missing intermediate slabs
+    if (!found) {
+      const prev = haulageRateTable.filter(r => r.distance < slabKm).pop();
+      const next = haulageRateTable.find(r => r.distance > slabKm);
+      if (prev && next) {
+        const ratio = (slabKm - prev.distance) / (next.distance - prev.distance);
+        found = {
+          distance: slabKm,
+          u10: Math.round(prev.u10 + ratio * (next.u10 - prev.u10)),
+          u20: Math.round(prev.u20 + ratio * (next.u20 - prev.u20)),
+          u26: Math.round(prev.u26 + ratio * (next.u26 - prev.u26)),
+          u31: Math.round(prev.u31 + ratio * (next.u31 - prev.u31)),
+          a31: Math.round(prev.a31 + ratio * (next.a31 - prev.a31)),
+          emptyCont: Math.round(prev.emptyCont + ratio * (next.emptyCont - prev.emptyCont)),
+          emptyFlat: Math.round(prev.emptyFlat + ratio * (next.emptyFlat - prev.emptyFlat))
+        };
+      }
+    }
+    return found;
+  }
+
+  const base3500 = haulageRateTable.find(r => r.distance === 3500);
+  const base3450 = haulageRateTable.find(r => r.distance === 3450);
+  const extraSlabs = Math.ceil((km - 3500) / 50);
+
+  return {
+    distance: km,
+    u10: base3500.u10 + extraSlabs * (base3500.u10 - base3450.u10),
+    u20: base3500.u20 + extraSlabs * (base3500.u20 - base3450.u20),
+    u26: base3500.u26 + extraSlabs * (base3500.u26 - base3450.u26),
+    u31: base3500.u31 + extraSlabs * (base3500.u31 - base3450.u31),
+    a31: base3500.a31 + extraSlabs * (base3500.a31 - base3450.a31),
+    emptyCont: base3500.emptyCont + extraSlabs * (base3500.emptyCont - base3450.emptyCont),
+    emptyFlat: base3500.emptyFlat + extraSlabs * (base3500.emptyFlat - base3450.emptyFlat)
+  };
+}
+
+const haulageModal = document.getElementById('haulageModal');
+const haulageBtn = document.getElementById('haulageCalcTab');
+const closeHaulageBtn = document.getElementById('closeHaulageModal');
+const cancelHaulageBtn = document.getElementById('cancelHaulageModal');
+const resetHaulageBtn = document.getElementById('resetHaulageModal');
+const isDoubleStackCheck = document.getElementById('isDoubleStack');
+const upperStackWrapper = document.getElementById('upperStackWrapper');
+
+function resetHaulageForm() {
+  document.getElementById('calcDistance').value = '';
+  ['teu10', 'teu20', 'teu26', 'teu31', 'teu31plus', 'feu20', 'feu40', 'emptyTeu', 'emptyFeu', 'emptyFlats', 'upperFeu20', 'upperFeu40'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  isDoubleStackCheck.checked = false;
+  upperStackWrapper.style.display = 'none';
+  document.getElementById('calcResults').style.display = 'none';
+}
+
+if (haulageBtn) haulageBtn.onclick = () => { haulageModal.style.display = 'flex'; };
+if (closeHaulageBtn) closeHaulageBtn.onclick = () => { haulageModal.style.display = 'none'; resetHaulageForm(); };
+if (cancelHaulageBtn) cancelHaulageBtn.onclick = () => { haulageModal.style.display = 'none'; resetHaulageForm(); };
+if (resetHaulageBtn) resetHaulageBtn.onclick = resetHaulageForm;
+
+isDoubleStackCheck.onchange = (e) => {
+  upperStackWrapper.style.display = e.target.checked ? 'grid' : 'none';
+};
+
+document.getElementById('submitHaulageCalc').onclick = () => {
+  const km = parseFloat(document.getElementById('calcDistance').value);
+  if (!km || km <= 0) {
+    alert('Please enter a valid distance in Kms.');
+    return;
+  }
+
+  const rates = getRateForDistance(km);
+  if (!rates) return;
+
+  // 1. Loaded 20ft TEUs
+  const t10 = parseInt(document.getElementById('teu10').value) || 0;
+  const t20 = parseInt(document.getElementById('teu20').value) || 0;
+  const t26 = parseInt(document.getElementById('teu26').value) || 0;
+  const t31 = parseInt(document.getElementById('teu31').value) || 0;
+  const t31p = parseInt(document.getElementById('teu31plus').value) || 0;
+
+  const loadedTeuCharge = (t10 * rates.u10) + (t20 * rates.u20) + (t26 * rates.u26) + (t31 * rates.u31) + (t31p * rates.a31);
+
+  // 2. Loaded 40ft FEUs (Lower Deck)
+  const f20 = parseInt(document.getElementById('feu20').value) || 0;
+  const f40 = parseInt(document.getElementById('feu40').value) || 0;
+
+  // 40ft < 20MT maps to 20ft < 10MT (u10); 40ft 20-40MT maps to 20ft 10-20MT (u20)
+  const baseFeu20Rate = rates.u10 * 1.8;
+  const baseFeu40Rate = rates.u20 * 1.8;
+
+  const loadedFeuCharge = (f20 * baseFeu20Rate) + (f40 * baseFeu40Rate);
+
+  // 3. Upper Deck 40ft FEUs (50% Concession)
+  let upperStackCharge = 0;
+  let upperFeu20Count = 0;
+  let upperFeu40Count = 0;
+  if (isDoubleStackCheck.checked) {
+    upperFeu20Count = parseInt(document.getElementById('upperFeu20').value) || 0;
+    upperFeu40Count = parseInt(document.getElementById('upperFeu40').value) || 0;
+
+    upperStackCharge = (upperFeu20Count * baseFeu20Rate * 0.5) + (upperFeu40Count * baseFeu40Rate * 0.5);
+  }
+
+  // 4. Empties
+  const eTeu = parseInt(document.getElementById('emptyTeu').value) || 0;
+  const eFeu = parseInt(document.getElementById('emptyFeu').value) || 0;
+  const eFlats = parseInt(document.getElementById('emptyFlats').value) || 0;
+
+  const emptyFeuRate = rates.emptyCont * 1.8;
+  const emptyFlatRate = rates.emptyFlat * 2;
+
+  const emptyContCharge = (eTeu * rates.emptyCont) + (eFeu * emptyFeuRate);
+  const emptyFlatCharge = eFlats * emptyFlatRate;
+
+  const totalCharge = loadedTeuCharge + loadedFeuCharge + upperStackCharge + emptyContCharge + emptyFlatCharge;
+
+  document.getElementById('totalHaulageValue').textContent = `₹ ${Math.round(totalCharge).toLocaleString('en-IN')}`;
+  
+  const bd = document.getElementById('calcBreakdown');
+
+  let stepNum = 1;
+  let breakdownHTML = `<div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">`;
+
+  // Step 1: Distance & Slab
+  breakdownHTML += `
+    <div style="background: var(--surface); padding: 10px; border-radius: 6px; border: 1px solid var(--border);">
+      <strong style="color: var(--primary);">Step ${stepNum++}: Distance Slab Determination</strong>
+      <div style="margin-top: 4px; color: var(--text);">• Input Distance: ${km} km</div>
+      <div style="color: var(--text);">• Applicable Rate Slab: <strong>${rates.distance} km</strong></div>
+    </div>`;
+
+  // Step 2: Loaded 20ft TEUs
+  breakdownHTML += `
+    <div style="background: var(--surface); padding: 10px; border-radius: 6px; border: 1px solid var(--border);">
+      <strong style="color: var(--primary);">Step ${stepNum++}: Loaded 20ft TEUs Calculation</strong>
+      <ul style="margin-left: 18px; margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">
+        <li>≤ 10T: ${t10} TEU(s) × ₹${rates.u10.toLocaleString('en-IN')} = ₹${(t10 * rates.u10).toLocaleString('en-IN')}</li>
+        <li>10T - 20T: ${t20} TEU(s) × ₹${rates.u20.toLocaleString('en-IN')} = ₹${(t20 * rates.u20).toLocaleString('en-IN')}</li>
+        <li>20T - 26T: ${t26} TEU(s) × ₹${rates.u26.toLocaleString('en-IN')} = ₹${(t26 * rates.u26).toLocaleString('en-IN')}</li>
+        <li>26T - 31T: ${t31} TEU(s) × ₹${rates.u31.toLocaleString('en-IN')} = ₹${(t31 * rates.u31).toLocaleString('en-IN')}</li>
+        <li>> 31T: ${t31p} TEU(s) × ₹${rates.a31.toLocaleString('en-IN')} = ₹${(t31p * rates.a31).toLocaleString('en-IN')}</li>
+      </ul>
+      <div style="margin-top: 6px; font-weight: 600;">Subtotal (20ft TEUs): ₹${Math.round(loadedTeuCharge).toLocaleString('en-IN')}</div>
+    </div>`;
+
+  // Step 3: Loaded 40ft FEUs (Lower Deck)
+  breakdownHTML += `
+    <div style="background: var(--surface); padding: 10px; border-radius: 6px; border: 1px solid var(--border);">
+      <strong style="color: var(--primary);">Step ${stepNum++}: Loaded 40ft FEUs Calculation (Lower Deck)</strong>
+      <p style="font-size: 11px; color: var(--muted); margin-top: 2px;">(Base FEU Rate = 1.8 × Equivalent TEU Rate)</p>
+      <ul style="margin-left: 18px; margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">
+        <li>&lt; 20 MT Gross: ${f20} FEU(s) × (1.8 × ₹${rates.u10} = ₹${baseFeu20Rate.toFixed(2)}) = ₹${(f20 * baseFeu20Rate).toLocaleString('en-IN')}</li>
+        <li>20 MT - 40 MT Gross: ${f40} FEU(s) × (1.8 × ₹${rates.u20} = ₹${baseFeu40Rate.toFixed(2)}) = ₹${(f40 * baseFeu40Rate).toLocaleString('en-IN')}</li>
+      </ul>
+      <div style="margin-top: 6px; font-weight: 600;">Subtotal (Lower Deck FEUs): ₹${Math.round(loadedFeuCharge).toLocaleString('en-IN')}</div>
+    </div>`;
+
+  // Step 4: Double Stack Upper Deck (if applicable)
+  if (isDoubleStackCheck.checked) {
+    const u20Rate = baseFeu20Rate * 0.5;
+    const u40Rate = baseFeu40Rate * 0.5;
+    breakdownHTML += `
+      <div style="background: var(--surface); padding: 10px; border-radius: 6px; border: 1px solid var(--border);">
+        <strong style="color: var(--primary);">Step ${stepNum++}: Upper Deck 40ft FEUs Calculation (50% Concession)</strong>
+        <ul style="margin-left: 18px; margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">
+          <li>Upper Deck (&lt; 20 MT): ${upperFeu20Count} FEU(s) × (50% of ₹${baseFeu20Rate.toFixed(2)} = ₹${u20Rate.toFixed(2)}) = ₹${(upperFeu20Count * u20Rate).toLocaleString('en-IN')}</li>
+          <li>Upper Deck (20 MT - 40 MT): ${upperFeu40Count} FEU(s) × (50% of ₹${baseFeu40Rate.toFixed(2)} = ₹${u40Rate.toFixed(2)}) = ₹${(upperFeu40Count * u40Rate).toLocaleString('en-IN')}</li>
+        </ul>
+        <div style="margin-top: 6px; font-weight: 600;">Subtotal (Upper Deck FEUs): ₹${Math.round(upperStackCharge).toLocaleString('en-IN')}</div>
+      </div>`;
+  }
+
+  // Step 5: Empties & Flat Wagons
+  breakdownHTML += `
+    <div style="background: var(--surface); padding: 10px; border-radius: 6px; border: 1px solid var(--border);">
+      <strong style="color: var(--primary);">Step ${stepNum++}: Empty Containers & Flat Wagons Calculation</strong>
+      <ul style="margin-left: 18px; margin-top: 4px; display: flex; flex-direction: column; gap: 2px;">
+        <li>Empty 20ft TEUs: ${eTeu} TEU(s) × ₹${rates.emptyCont.toLocaleString('en-IN')} = ₹${(eTeu * rates.emptyCont).toLocaleString('en-IN')}</li>
+        <li>Empty 40ft FEUs: ${eFeu} FEU(s) × (1.8 × ₹${rates.emptyCont} = ₹${emptyFeuRate.toFixed(2)}) = ₹${(eFeu * emptyFeuRate).toLocaleString('en-IN')}</li>
+        <li>Empty Flat Wagons: ${eFlats} Flat(s) × (2 × ₹${rates.emptyFlat} = ₹${emptyFlatRate.toFixed(2)}) = ₹${(eFlats * emptyFlatRate).toLocaleString('en-IN')}</li>
+      </ul>
+      <div style="margin-top: 6px; font-weight: 600;">Subtotal (Empties): ₹${Math.round(emptyContCharge + emptyFlatCharge).toLocaleString('en-IN')}</div>
+    </div>`;
+
+  // Step 6: Final Total Summary
+  breakdownHTML += `
+    <div style="background: var(--primary-light); padding: 10px; border-radius: 6px; border: 1px solid var(--primary);">
+      <strong style="color: var(--primary);">Step ${stepNum}: Total Charge Summation</strong>
+      <div style="margin-top: 4px; line-height: 1.5;">
+        = Loaded TEUs (₹${Math.round(loadedTeuCharge).toLocaleString('en-IN')}) 
+        + Lower Deck FEUs (₹${Math.round(loadedFeuCharge).toLocaleString('en-IN')}) 
+        ${isDoubleStackCheck.checked ? `+ Upper Deck FEUs (₹${Math.round(upperStackCharge).toLocaleString('en-IN')}) ` : ''}
+        + Empty Containers (₹${Math.round(emptyContCharge).toLocaleString('en-IN')}) 
+        + Empty Flats (₹${Math.round(emptyFlatCharge).toLocaleString('en-IN')})
+      </div>
+      <div style="margin-top: 6px; font-size: 14px; font-weight: 700; color: var(--primary);">
+        Final Estimated Haulage Charge = ₹ ${Math.round(totalCharge).toLocaleString('en-IN')}
+      </div>
+    </div>
+  </div>`;
+
+  bd.innerHTML = breakdownHTML;
+  document.getElementById('calcResults').style.display = 'block';
+};
 
 loadDemo();
 </script>
