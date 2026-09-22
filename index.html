@@ -684,7 +684,69 @@ function colorFor(status){
 
 function matchStation(name){
   if(!name) return null;
-  return stationMaster.find(s=>s.station.toLowerCase()===name.toLowerCase().trim());
+  const n = name.toLowerCase().trim();
+  return stationMaster.find(s => (s.station && s.station.toLowerCase() === n) || (s.code && s.code.toLowerCase() === n));
+}
+
+// Automatic Geocoding Cache & Queue for Missing Station Coordinates
+const geocodeCache = {};
+const pendingGeocodes = new Set();
+
+async function geocodeMissingStation(stationCode) {
+  if (!stationCode) return;
+  const cleanCode = stationCode.trim();
+  const lower = cleanCode.toLowerCase();
+
+  if (matchStation(cleanCode) || pendingGeocodes.has(lower)) return;
+
+  if (geocodeCache[lower]) {
+    stationMaster.push(geocodeCache[lower]);
+    render();
+    return;
+  }
+
+  pendingGeocodes.add(lower);
+  try {
+    const query = encodeURIComponent(`${cleanCode} railway station, India`);
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          const entry = { station: cleanCode, code: cleanCode, lat, lng };
+          geocodeCache[lower] = entry;
+          stationMaster.push(entry);
+          document.getElementById('syncStatus').textContent = `Geocoded station: ${cleanCode} (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+          render();
+        }
+      }
+    }
+  } catch(err) {
+    console.warn(`Could not geocode station ${cleanCode}:`, err);
+  } finally {
+    pendingGeocodes.delete(lower);
+  }
+}
+
+async function resolveMissingStations() {
+  if (!records || records.length === 0) return;
+  const missing = [];
+  records.forEach(r => {
+    if (r.station && !matchStation(r.station) && !missing.includes(r.station.trim())) {
+      missing.push(r.station.trim());
+    }
+  });
+
+  for (let i = 0; i < missing.length; i++) {
+    await geocodeMissingStation(missing[i]);
+    if (i < missing.length - 1) {
+      await new Promise(res => setTimeout(res, 1050)); // Respect OSM Nominatim 1 request/sec rate limit
+    }
+  }
 }
 
 function loadRecords(rakeRows){
@@ -696,7 +758,17 @@ function loadRecords(rakeRows){
     const origin = pick(r, ['origin']) || 'N/A';
     const destination = pick(r, ['destination']) || 'N/A';
     const eta = pick(r, ['eta']) || 'N/A';
-    const remarks = pick(r, ['remarks', 'remark']) || 'No logs entered';
+    const rawRemark = pick(r, ['remark', 'remarks']) || '';
+    const currentVal = pick(r, ['current']) || '';
+    const previousVal = pick(r, ['previous']) || '';
+    const cleanCurrent = String(currentVal).trim().replace(/\.+$/, '').toLowerCase();
+    let remarks = '';
+    if (cleanCurrent === 'unchanged') {
+      remarks = [rawRemark, previousVal].map(s => String(s).trim()).filter(Boolean).join(' ');
+    } else {
+      remarks = [rawRemark, currentVal, previousVal].map(s => String(s).trim()).filter(Boolean).join(' ');
+    }
+    if (!remarks) remarks = 'No logs entered';
     const updated = pick(r, ['updated', 'updated at', 'last updated']) || 'N/A';
     
     const rakeId = pick(r, ['rake id', 'rakeid']) || 'N/A';
@@ -728,6 +800,7 @@ function loadRecords(rakeRows){
   
   render(); 
   if(records.length > 0) selectRecord(records[0].id);
+  resolveMissingStations();
 }
 
 function render(){
@@ -900,7 +973,8 @@ async function refresh(){
     ]); 
     
     stationMaster=stationsCsv.map(r=>({
-      station: (pick(r, ['station', 'name', 'station name']) || '').trim(),
+      station: (pick(r, ['station', 'name', 'station name', 'code', 'station code', 'stn code']) || '').trim(),
+      code: (pick(r, ['code', 'station code', 'stn code', 'station']) || '').trim(),
       lat: parseFloat(pick(r, ['latitude', 'lat'])),
       lng: parseFloat(pick(r, ['longitude', 'lng']))
     })).filter(r=>r.station && Number.isFinite(r.lat) && Number.isFinite(r.lng)); 
