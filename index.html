@@ -111,7 +111,7 @@
     flex-shrink: 0;
     position: relative;
   }
-  .search-wrapper { display: flex; align-items: center; gap: 12px; background: var(--panel-inner); border: 1px solid var(--border); padding: 0 16px; height: 44px; border-radius: 999px; width: 100%; max-width: 400px; }
+  .search-wrapper { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--panel-inner); border: 1px solid var(--border); padding: 0 16px; height: 44px; border-radius: 999px; width: 100%; max-width: 400px; }
   .search-wrapper input { width: 100%; font-size: 13px; }
   .action-row { display: flex; align-items: center; gap: 10px; }
   .btn-base { padding: 10px 18px; border-radius: 999px; font-weight: 600; font-size: 13px; border: 1px solid var(--border); background: var(--surface); }
@@ -196,6 +196,22 @@
     z-index: 1;
   }
 
+  /* Sync Indicator Blip Animation */
+  @keyframes sync-blip {
+    0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
+    70% { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+  }
+  .sync-blip-marker {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--success);
+    margin-right: 8px;
+    animation: sync-blip 1.5s infinite;
+  }
+
   /* Split Data Grid Layout */
   .split-data-grid {
     display: grid;
@@ -278,6 +294,19 @@
   .route-node.active .node-indicator { background: var(--primary); outline-color: var(--primary); }
   .node-label h5 { font-size: 13px; font-weight: 600; }
   .node-label p { font-size: 11px; color: var(--muted); }
+
+  /* Radar Pulse Animation Rules */
+  @keyframes radar-pulse {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 70%, transparent); }
+    70% { box-shadow: 0 0 0 10px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+  .radar-active {
+    animation: radar-pulse 2s infinite;
+    background: var(--primary) !important;
+    border-color: var(--panel-inner) !important;
+    outline-color: var(--primary) !important;
+  }
 
   .property-list { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border); padding-top: 14px; }
   .property-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
@@ -375,8 +404,11 @@
   <section class="central-workspace">
    <header class="top-navbar">
     <div class="search-wrapper">
-     <span>🔍</span>
-     <input type="text" id="searchInput" placeholder="Search operational registers by Rake ID, location yard, route origin...">
+     <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+       <span>🔍</span>
+       <input type="text" id="searchInput" placeholder="Search operational registers by Rake ID, location yard, route origin...">
+     </div>
+     <button type="button" id="clearSearch" style="display: none; padding: 4px 8px; font-size: 14px; color: var(--muted); cursor: pointer; border: none; background: transparent;" title="Clear Search">✕</button>
     </div>
     <div class="action-row">
      <button class="btn-base" id="loadDemoBtn">Load Native Demo Data</button>
@@ -397,9 +429,8 @@
 
     <section class="map-panel-card">
      <div class="map-header-bar">
-      <div>
-       <strong style="font-size: 14px; font-weight: 700;">Live Tracking</strong>
-       <p class="muted" style="font-size: 11px;" id="syncStatus">System ready. Select target or import network node streams.</p>
+      <div style="display: flex; align-items: center;">
+       <strong style="font-size: 14px; font-weight: 700; display: flex; align-items: center;"><span class="sync-blip-marker"></span>Live Tracking</strong>
       </div>
       
       <div class="filter-inline-strip">
@@ -462,23 +493,23 @@
    <div class="inspector-card">
     <span class="muted" style="font-size: 11px; font-weight: 600; text-transform: uppercase;">Path</span>
     
-    <div class="route-path-flow">
-     <div class="route-node active">
-      <div class="node-indicator"></div>
+    <div class="route-path-flow" id="routePathFlow">
+     <div class="route-node active" id="nodeOrigin">
+      <div class="node-indicator" style="background: var(--primary); outline-color: var(--primary);"></div>
       <div class="node-label">
        <p class="muted">Origin Point</p>
        <h5 id="inspectOrigin">--</h5>
       </div>
      </div>
-     <div class="route-node active">
-      <div class="node-indicator" style="background: var(--primary); outline-color: var(--primary);"></div>
+     <div class="route-node active" id="nodeCurrent">
+      <div class="node-indicator radar-active" id="indCurrent"></div>
       <div class="node-label">
        <p class="muted">Current Monitored Checkpoint</p>
        <h5 id="inspectCurrent">--</h5>
       </div>
      </div>
-     <div class="route-node">
-      <div class="node-indicator"></div>
+     <div class="route-node" id="nodeDestination">
+      <div class="node-indicator" id="indDestination"></div>
       <div class="node-label">
        <p class="muted">Terminal Route Destination</p>
        <h5 id="inspectDestination">--</h5>
@@ -720,7 +751,6 @@ async function geocodeMissingStation(stationCode) {
           const entry = { station: cleanCode, code: cleanCode, lat, lng };
           geocodeCache[lower] = entry;
           stationMaster.push(entry);
-          document.getElementById('syncStatus').textContent = `Geocoded station: ${cleanCode} (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
           render();
         }
       }
@@ -799,15 +829,18 @@ function loadRecords(rakeRows){
   }).filter(r => r.rakeNo && r.station);
   
   render(); 
-  if(records.length > 0) selectRecord(records[0].id);
   resolveMissingStations();
 }
 
 function render(){
   const today = new Date();
   today.setHours(0,0,0,0);
-  const fiveDaysFromNow = new Date(today);
-  fiveDaysFromNow.setDate(today.getDate() + 5);
+  
+  const twentyDaysAgo = new Date(today);
+  twentyDaysAgo.setDate(today.getDate() - 20);
+
+  const tenDaysFromNow = new Date(today);
+  tenDaysFromNow.setDate(today.getDate() + 10);
 
   const list = records.filter(r=>{
     const rs = r.status.toLowerCase(); 
@@ -881,7 +914,7 @@ function render(){
     tr.className = 'clickable-row';
     
     const bpcDate = parseDate(r.bpcDueDate);
-    if (bpcDate && bpcDate >= today && bpcDate <= fiveDaysFromNow) {
+    if (bpcDate && bpcDate >= twentyDaysAgo && bpcDate <= tenDaysFromNow) {
       tr.className += ' bpc-alert';
     }
     
@@ -921,6 +954,27 @@ function selectRecord(id){
   document.getElementById('inspectOrigin').textContent=r.origin;
   document.getElementById('inspectCurrent').textContent=r.station;
   document.getElementById('inspectDestination').textContent=r.destination;
+  
+  // Dynamic Route Animation Check
+  const cleanStation = (name) => (name || '').replace(/\(\s*[ELel]\s*\)$/, '').trim().toLowerCase();
+  const isAtDestination = cleanStation(r.station) === cleanStation(r.destination);
+  
+  const nodeCurrent = document.getElementById('nodeCurrent');
+  const indCurrent = document.getElementById('indCurrent');
+  const nodeDestination = document.getElementById('nodeDestination');
+  const indDestination = document.getElementById('indDestination');
+
+  if(isAtDestination) {
+      nodeCurrent.style.display = 'none';
+      nodeDestination.classList.add('active');
+      indDestination.className = 'node-indicator radar-active';
+  } else {
+      nodeCurrent.style.display = 'flex';
+      nodeDestination.classList.remove('active');
+      indCurrent.className = 'node-indicator radar-active';
+      indDestination.className = 'node-indicator';
+  }
+
   document.getElementById('inspectEta').textContent=r.eta;
   document.getElementById('inspectRemarks').textContent=r.remarks;
   
@@ -958,14 +1012,12 @@ function selectRecord(id){
 function loadDemo(){
   stationMaster = [...demoStations]; 
   loadRecords(demoRakes); 
-  document.getElementById('syncStatus').textContent='Loaded internal asset tracking databases profiles.';
 }
 
 function parseCsv(url){
   return new Promise((resolve,reject)=>Papa.parse(url,{download:true,header:true,skipEmptyLines:true,complete:r=>resolve(r.data),error:reject}))}
 
 async function refresh(){
-  document.getElementById('syncStatus').textContent='Synchronizing network links data nodes streams...'; 
   try{
     const [rakes,stationsCsv]=await Promise.all([
       parseCsv(activeRakeEndpoint),
@@ -980,9 +1032,7 @@ async function refresh(){
     })).filter(r=>r.station && Number.isFinite(r.lat) && Number.isFinite(r.lng)); 
     
     loadRecords(rakes); 
-    document.getElementById('syncStatus').textContent='Cloud tracking telemetry synchronization completed successfully.';
   }catch(e){
-    document.getElementById('syncStatus').textContent='Target connection timed out. Verify proxy routing settings.';
     console.error(e);
   }
 }
@@ -1020,7 +1070,21 @@ modal.addEventListener('click',e=>{if(e.target===modal) closeModal()});
 
 document.getElementById('loadDemoBtn').onclick=loadDemo; 
 document.getElementById('reloadBothBtn').onclick=refresh; 
-document.getElementById('searchInput').oninput=e=>{searchTerm=e.target.value.trim(); render()}; 
+
+// Search logic with clear button
+const searchInput = document.getElementById('searchInput');
+const clearSearchBtn = document.getElementById('clearSearch');
+searchInput.oninput=e=>{
+  searchTerm=e.target.value.trim(); 
+  clearSearchBtn.style.display = searchTerm ? 'block' : 'none';
+  render();
+}; 
+clearSearchBtn.onclick = () => {
+  searchInput.value = '';
+  searchTerm = '';
+  clearSearchBtn.style.display = 'none';
+  render();
+};
 
 function setFilter(id, filterValue){
   document.querySelectorAll('.filter-tab').forEach(x=>{
@@ -1298,7 +1362,14 @@ document.getElementById('submitHaulageCalc').onclick = () => {
   document.getElementById('calcResults').style.display = 'block';
 };
 
+// 1. Initial fast load using demo data to populate UI instantly
 loadDemo();
+
+// 2. Fetch live data silently
+refresh();
+
+// 3. Auto-update every 5 seconds
+setInterval(refresh, 5000);
 </script>
 </body>
 </html>
