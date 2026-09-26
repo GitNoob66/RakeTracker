@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
  <meta charset="UTF-8" />
  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
@@ -327,6 +327,17 @@
     backface-visibility: hidden;
   }
 
+  /* Hardware-accelerated marker rendering to prevent jitter */
+  .leaflet-marker-icon,
+  .leaflet-marker-shadow,
+  .rake-label,
+  .rake-label div {
+    will-change: transform;
+    transform: translate3d(0,0,0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
   /* MOBILE & RESPONSIVE BREAKPOINTS */
   @media (max-width: 1200px) {
     .app-layout { display: flex; flex-direction: column; height: auto; min-height: 100vh; }
@@ -359,6 +370,69 @@
     .action-row { flex-direction: column; align-items: stretch; width: 100%; }
     .btn-base { width: 100%; text-align: center; }
     .theme-toggle { align-self: flex-start; }
+  }
+
+  /* --- COMMAND CENTER AESTHETIC ENHANCEMENTS --- */
+  /* Custom Slim Scrollbars */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  /* Glassmorphism for Top Bar */
+  .top-navbar {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  [data-theme="dark"] .top-navbar {
+    background: rgba(19, 26, 38, 0.88);
+  }
+
+  /* High-Tech Radar Map Invert Filter for Dark Theme */
+  [data-theme="dark"] .leaflet-tile-pane {
+    filter: brightness(0.65) invert(1) contrast(2.6) hue-rotate(205deg) saturate(0.4);
+  }
+
+  /* KPI Card Elevation & Micro-Interactions */
+  .metric-card {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, box-shadow 0.2s ease !important;
+  }
+  .metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px -6px rgba(0, 0, 0, 0.3) !important;
+  }
+  .metric-card.motion:hover { border-color: var(--success); }
+  .metric-card.terminal:hover { border-color: var(--blue); }
+  .metric-card.stabled:hover { border-color: var(--warning); }
+  .metric-card.bpc:hover { border-color: var(--danger); }
+
+  /* Refined Table Row Styling & Selection */
+  .data-console-table tr.clickable-row {
+    transition: background-color 0.15s ease;
+  }
+  .data-console-table tr.clickable-row:hover {
+    background: linear-gradient(90deg, var(--panel-inner) 0%, transparent 100%);
+  }
+  .data-console-table tr.selected-row {
+    border-left: 3px solid var(--primary);
+  }
+  .data-console-table tr.bpc-alert {
+    border-left: 3px solid #f97316 !important;
+  }
+
+  /* Rake Label Map Badges */
+  .rake-label div {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    letter-spacing: 0.04em;
+    font-feature-settings: "tnum" 1;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+  }
+
+  /* Search Input Focus Halo */
+  .search-wrapper:focus-within {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--primary-light) !important;
   }
  </style>
 </head>
@@ -667,9 +741,9 @@ const demoRakes=[
 
 let stationMaster=[]; let records=[]; let searchTerm=''; let activeFilter='all';
 
-const root=document.documentElement; const themeBtn=document.getElementById('themeBtn'); let theme='dark'; 
+const root=document.documentElement; const themeBtn=document.getElementById('themeBtn'); let theme='light'; 
 function setTheme(t){theme=t; root.setAttribute('data-theme',t); themeBtn.textContent=t==='dark'?'☀️':'🌙'} 
-setTheme('dark'); themeBtn.onclick=()=>setTheme(theme==='dark'?'light':'dark');
+setTheme('light'); themeBtn.onclick=()=>setTheme(theme==='dark'?'light':'dark');
 
 const map=L.map('map').setView([22.8,78.9],5); 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap contributors'}).addTo(map); 
@@ -901,8 +975,9 @@ function render(){
                 display: inline-block;
               ">${r.rakeNo}</div>`,
         className: 'rake-label',
-        iconSize: null, 
-        iconAnchor: [0, 0] 
+        iconSize: [null, null],
+        iconAnchor: [0, 0],
+        popupAnchor: [0, -10]
       });
 
       L.marker([finalLat, finalLng], { icon: textIcon }).addTo(layer)
@@ -1005,7 +1080,7 @@ function selectRecord(id){
   
   if(st) {
     const targetZoom = Math.max(map.getZoom(), 6);
-    map.flyTo([st.lat, st.lng], targetZoom, { duration: .6 });
+    map.panTo([st.lat, st.lng], { animate: true, duration: 0.5 });
   }
 }
 
