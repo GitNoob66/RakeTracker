@@ -4,8 +4,9 @@
  <meta charset="UTF-8" />
  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no" />
  <title>CWC RakeTrack Console v12.4</title>
- <link rel="preconnect" href="https://api.fontshare.com">
- <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,600,700&display=swap" rel="stylesheet">
+ <link rel="preconnect" href="https://fonts.googleapis.com">
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+ <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap" rel="stylesheet">
  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.2.0/papaparse.min.js"></script>
  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -434,10 +435,83 @@
     border-color: var(--primary) !important;
     box-shadow: 0 0 0 3px var(--primary-light) !important;
   }
+\n  /* Kinetic glass console visual layer */
+  :root {
+    --bg: #fafbfc; --surface: rgba(255,255,255,.78); --surface-hover: rgba(232,236,241,.82);
+    --panel-inner: rgba(248,250,252,.72); --text: #0f172a; --muted: #64748b; --border: rgba(148,163,184,.28);
+    --primary: #3b82f6; --primary-light: rgba(59,130,246,.12); --blue: #2563eb; --success: #10b981;
+    --warning: #f59e0b; --danger: #ef4444; --radius-lg: 12px; --radius-md: 8px;
+    --shadow-sm: 0 1px 2px rgba(15,23,42,.05), 0 8px 24px rgba(148,163,184,.08);
+    --shadow-md: 0 18px 55px -28px rgba(15,23,42,.32);
+    font-family: 'Manrope', system-ui, sans-serif;
+  }
+  [data-theme="dark"] {
+    --bg: #070b16; --surface: rgba(14,21,38,.72); --surface-hover: rgba(30,42,68,.72);
+    --panel-inner: rgba(14,21,38,.56); --text: #f1f5f9; --muted: #94a3b8; --border: rgba(94,116,153,.28);
+    --primary: #22d3ee; --primary-light: rgba(34,211,238,.12); --blue: #60a5fa; --success: #34d399;
+    --warning: #fbbf24; --danger: #fb7185; --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+    --shadow-md: 0 18px 55px -24px rgba(0,0,0,.7);
+  }
+  html, body { background: var(--bg); }
+  body { font-family: 'Manrope', system-ui, sans-serif; background-image: radial-gradient(circle at 12% 8%, color-mix(in srgb,var(--primary) 10%,transparent),transparent 32%), radial-gradient(circle at 85% 72%, color-mix(in srgb,var(--blue) 7%,transparent),transparent 30%); }
+  h1,h2,h3,h4,h5,.metric-value,.panel-header-line,.map-header-bar strong { font-family:'Sora',sans-serif; letter-spacing:0; }
+  button,a,input { min-height: 40px; }
+  .app-layout { grid-template-columns: 248px minmax(0,1fr) 320px; }
+  .control-sidebar,.inspection-sidebar,.top-navbar { background: var(--surface); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+  .control-sidebar { padding:20px 14px; gap:24px; }
+  .brand-logo { color:#fff; box-shadow:0 0 0 1px color-mix(in srgb,var(--primary) 45%,transparent),0 12px 30px color-mix(in srgb,var(--primary) 22%,transparent); }
+  [data-theme="dark"] .brand-logo { color:#070b16; }
+  .brand-text h1 { letter-spacing:0; }
+  .section-label { letter-spacing:.14em; font-size:10px; }
+  .menu-btn { padding:10px 12px; border-radius:8px; }
+  .config-card,.inspector-card,.metric-card,.map-panel-card,.panel-container { backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); }
+  .config-card { background:color-mix(in srgb,var(--surface) 64%,transparent); }
+  .top-navbar { min-height:64px; padding:10px 18px; z-index:500; }
+  .search-wrapper { height:40px; max-width:520px; border-radius:8px; background:var(--panel-inner); }
+  .btn-base,.filter-tab { border-radius:8px; }
+  .btn-base.primary { color:#fff; box-shadow:0 8px 24px color-mix(in srgb,var(--primary) 22%,transparent); }
+  [data-theme="dark"] .btn-base.primary { color:#070b16; }
+  .theme-toggle { border-radius:8px; }
+  .workspace-content { padding:18px; gap:16px; }
+  .kpi-dashboard-grid { gap:12px; }
+  .metric-card { padding:14px 16px; border-radius:10px; background:color-mix(in srgb,var(--surface) 88%,transparent); }
+  .metric-card::before { width:100%; height:2px; }
+  .metric-value { font-size:24px; letter-spacing:0; }
+  .map-panel-card { height:47vh !important; min-height:360px; border-radius:12px; }
+  .map-header-bar { min-height:52px; padding:10px 14px; background:color-mix(in srgb,var(--surface) 88%,transparent); }
+  .filter-inline-strip { overflow-x:auto; flex-wrap:nowrap; max-width:75%; scrollbar-width:none; }
+  .filter-tab { min-height:32px; padding:6px 12px; }
+  .panel-container { padding:14px; border-radius:12px; background:color-mix(in srgb,var(--surface) 86%,transparent); }
+  .table-scroll-container { border-radius:8px; }
+  .data-console-table { width:max(100%,1120px); }
+  .data-console-table th { letter-spacing:.06em; font-size:10px; }
+  .data-console-table th,.data-console-table td { height:42px; padding:0 12px; }
+  .status { border-radius:6px; }
+  .inspection-sidebar { padding:20px 14px; gap:16px; }
+  .inspector-card { border-radius:10px; padding:14px; background:color-mix(in srgb,var(--surface) 50%,transparent); }
+  .mobile-rail-button,.mobile-inspector-button,.drawer-backdrop { display:none; }
+  .mobile-rail-button,.mobile-inspector-button { width:40px;height:40px;border:1px solid var(--border);border-radius:8px;background:var(--surface);place-items:center;font-size:18px;flex-shrink:0; }
+  .leaflet-control-zoom a { background:var(--surface)!important;color:var(--text)!important;border-color:var(--border)!important; }
+  .leaflet-control-attribution { background:var(--surface)!important;color:var(--muted)!important; }
+  .leaflet-tile-pane { transition:opacity .22s ease!important; }
+  [data-theme="dark"] .leaflet-tile-pane { filter: brightness(.72) invert(1) contrast(1.8) hue-rotate(185deg) saturate(.45); }
+  @media(max-width:1200px){
+    body{overflow:hidden;height:100vh}.app-layout{display:grid;grid-template-columns:minmax(0,1fr);height:100vh;min-height:0}.central-workspace{height:100vh;overflow:hidden}.workspace-content{overflow-y:auto;height:auto}
+    .control-sidebar,.inspection-sidebar{position:fixed;top:0;bottom:0;width:min(88vw,320px);z-index:1200;display:flex;transition:transform .22s ease,visibility .22s ease;box-shadow:var(--shadow-md)}
+    .control-sidebar{left:0;transform:translateX(-105%);border-right:1px solid var(--border);border-bottom:0}.inspection-sidebar{right:0;transform:translateX(105%);border-left:1px solid var(--border);border-top:0;overflow-y:auto}
+    .control-sidebar.drawer-open,.inspection-sidebar.drawer-open{transform:translateX(0)}
+    .drawer-backdrop{position:fixed;inset:0;background:rgba(5,7,11,.58);backdrop-filter:blur(3px);z-index:1100}.drawer-backdrop.visible{display:block}
+    .mobile-rail-button,.mobile-inspector-button{display:grid}.map-panel-card{height:55vh!important}.kpi-dashboard-grid{grid-template-columns:repeat(5,minmax(120px,1fr));overflow-x:auto;padding-bottom:3px}
+  }
+  @media(max-width:768px){
+    .top-navbar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;padding:10px}.search-wrapper{grid-column:1/-1;grid-row:2;max-width:none}.action-row{display:contents}.action-row .btn-base{display:none}.theme-toggle{grid-column:2;justify-self:end}.workspace-content{padding:10px;gap:12px}.kpi-dashboard-grid{grid-template-columns:repeat(5,132px);gap:8px}.metric-card{min-height:92px;padding:12px}.metric-value{font-size:22px}.map-panel-card{height:58vh!important;min-height:420px}.map-header-bar{align-items:stretch;gap:8px}.filter-inline-strip{max-width:100%;width:100%;flex-wrap:nowrap}.filter-tab{flex:0 0 auto;min-height:40px}.panel-header-line{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}.panel-header-line>div{grid-column:1/-1;overflow-x:auto}.inspection-sidebar{padding:16px 12px}.modal{padding:10px;align-items:flex-end}.modal-card{max-height:92vh;overflow-y:auto;border-radius:14px 14px 0 0;padding:18px}.modal-card [style*="grid-template-columns: 1fr 1fr"]{grid-template-columns:1fr!important}.modal-card .actions,.modal-card>div:last-child{flex-wrap:wrap}.modal-card .btn-base{flex:1 1 140px}.table-scroll-container{max-height:52vh}
+  }
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
  </style>
 </head>
 <body>
 
+ <div class="drawer-backdrop" id="drawerBackdrop"></div>
  <div class="app-layout">
   
   <aside class="control-sidebar">
@@ -477,6 +551,7 @@
 
   <section class="central-workspace">
    <header class="top-navbar">
+     <button class="mobile-rail-button" id="mobileRailBtn" aria-label="Open controls" title="Open controls">☰</button>
     <div class="search-wrapper">
      <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
        <span>🔍</span>
@@ -485,6 +560,7 @@
      <button type="button" id="clearSearch" style="display: none; padding: 4px 8px; font-size: 14px; color: var(--muted); cursor: pointer; border: none; background: transparent;" title="Clear Search">✕</button>
     </div>
     <div class="action-row">
+      <button class="mobile-inspector-button" id="mobileInspectorBtn" aria-label="Open rake details" title="Open rake details">◎</button>
      <button class="btn-base" id="loadDemoBtn">Load Native Demo Data</button>
      <button class="btn-base primary" id="reloadBothBtn">Synchronize Feeds</button>
      <button class="theme-toggle" id="themeBtn">☀️</button>
@@ -741,12 +817,16 @@ const demoRakes=[
 
 let stationMaster=[]; let records=[]; let searchTerm=''; let activeFilter='all';
 
-const root=document.documentElement; const themeBtn=document.getElementById('themeBtn'); let theme='light'; 
-function setTheme(t){theme=t; root.setAttribute('data-theme',t); themeBtn.textContent=t==='dark'?'☀️':'🌙'} 
+const root=document.documentElement; const themeBtn=document.getElementById('themeBtn'); let theme='light';
+let baseTileLayer;
+const map=L.map('map',{zoomControl:true}).setView([22.8,78.9],5);
+function tileUrlFor(){return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'}
+function setTheme(t){
+  theme=t; root.setAttribute('data-theme',t); themeBtn.textContent=t==='dark'?'☀️':'🌙'; themeBtn.setAttribute('aria-label',t==='dark'?'Switch to light theme':'Switch to dark theme');
+  if(baseTileLayer){baseTileLayer.setUrl(tileUrlFor(t)); setTimeout(()=>map.invalidateSize(),80)}
+}
+baseTileLayer=L.tileLayer(tileUrlFor(theme),{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(map);
 setTheme('light'); themeBtn.onclick=()=>setTheme(theme==='dark'?'light':'dark');
-
-const map=L.map('map').setView([22.8,78.9],5); 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap contributors'}).addTo(map); 
 const layer=L.layerGroup().addTo(map);
 
 const resizeObserver = new ResizeObserver(() => {
@@ -1445,6 +1525,21 @@ refresh();
 
 // 3. Auto-update every 5 seconds
 setInterval(refresh, 5000);
+
+
+// Responsive drawer controls; existing application handlers remain unchanged.
+const mobileRailBtn=document.getElementById('mobileRailBtn');
+const mobileInspectorBtn=document.getElementById('mobileInspectorBtn');
+const controlSidebar=document.querySelector('.control-sidebar');
+const inspectionSidebar=document.querySelector('.inspection-sidebar');
+const drawerBackdrop=document.getElementById('drawerBackdrop');
+function closeDrawers(){controlSidebar.classList.remove('drawer-open');inspectionSidebar.classList.remove('drawer-open');drawerBackdrop.classList.remove('visible')}
+function openDrawer(drawer){closeDrawers();drawer.classList.add('drawer-open');drawerBackdrop.classList.add('visible');setTimeout(()=>map.invalidateSize(),240)}
+mobileRailBtn.onclick=()=>openDrawer(controlSidebar);
+mobileInspectorBtn.onclick=()=>openDrawer(inspectionSidebar);
+drawerBackdrop.onclick=closeDrawers;
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeDrawers()});
+window.addEventListener('resize',()=>{if(window.innerWidth>1200)closeDrawers();map.invalidateSize()});
 </script>
 </body>
 </html>
